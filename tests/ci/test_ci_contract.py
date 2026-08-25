@@ -51,6 +51,7 @@ def test_ci_keeps_required_quality_gates() -> None:
         "uv run ruff check .",
         "uv run ruff format --check .",
         'uv run mypy "${targets[@]}"',
+        "uv run python scripts/check_architecture.py",
         "uv run pytest -q",
         "npm run test --workspace @adaptcrm/web",
         "npm run lint --workspace @adaptcrm/web",
