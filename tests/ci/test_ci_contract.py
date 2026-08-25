@@ -64,6 +64,17 @@ def test_ci_keeps_required_quality_gates() -> None:
     assert all(command in commands for command in required_commands)
 
 
+def test_ci_runs_for_pull_requests_and_master_pushes_with_read_only_access() -> None:
+    workflow = load_workflow()
+    triggers = workflow.get("on")
+    permissions = workflow.get("permissions")
+
+    assert isinstance(triggers, dict)
+    assert "pull_request" in triggers
+    assert triggers.get("push") == {"branches": ["master"]}
+    assert permissions == {"contents": "read"}
+
+
 def test_ci_pins_external_actions_to_commits() -> None:
     action_references = [
         str(step["uses"]) for step in workflow_steps() if "uses" in step
