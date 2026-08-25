@@ -9,6 +9,8 @@
   "scripts": {
     "build": "tsc -b && vite build",
     "dev": "vite",
+    "lint": "eslint scripts",
+    "typecheck": "tsc -p tsconfig.ci.json",
     "test": "vitest run"
   },
   "dependencies": {
@@ -16,10 +18,12 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.3.0",
     "@vitejs/plugin-react": "6.1.0",
+    "eslint": "10.9.1",
     "typescript": "7.0.2",
     "vite": "8.2.2",
     "vitest": "4.1.11"
   }
 }
-

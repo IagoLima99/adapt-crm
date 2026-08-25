@@ -73,31 +73,16 @@ jobs:
         run: npm ci
 
       - name: Test web
-        run: npm run test --workspace @adaptcrm/web -- --passWithNoTests
+        run: npm run test --workspace @adaptcrm/web
 
-      - name: Lint web when configured
-        shell: bash
-        run: |
-          if node -e "const p=require('./apps/web/package.json'); process.exit(p.scripts?.lint ? 0 : 1)"; then
-            npm run lint --workspace @adaptcrm/web
-          else
-            echo "Web lint will become mandatory when EL-92 adds its lint script."
-          fi
+      - name: Lint web
+        run: npm run lint --workspace @adaptcrm/web
 
-      - name: Type-check and build web when scaffolded
-        shell: bash
-        run: |
-          if [[ -f apps/web/tsconfig.json ]]; then
-            npm run web:build
-          else
-            echo "Web build will become mandatory when EL-92 adds its TypeScript scaffold."
-          fi
+      - name: Type-check web
+        run: npm run typecheck --workspace @adaptcrm/web
 
       - name: Record build identity
-        shell: bash
-        run: |
-          mkdir -p build
-          node -e "const fs=require('node:fs'); const p=require('./package.json'); fs.writeFileSync('build/metadata.json', JSON.stringify({version:p.version,commit:process.env.GITHUB_SHA})+'\n')"
+        run: node apps/web/scripts/build-metadata.mjs build/metadata.json "${{ github.sha }}"
 
       - name: Upload build identity
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

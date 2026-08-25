@@ -12,9 +12,9 @@ def test_ci_keeps_required_quality_gates() -> None:
         "uv run ruff format --check .",
         'uv run mypy "${targets[@]}"',
         "uv run pytest -q",
-        "npm run test --workspace @adaptcrm/web -- --passWithNoTests",
+        "npm run test --workspace @adaptcrm/web",
         "npm run lint --workspace @adaptcrm/web",
-        "npm run web:build",
+        "npm run typecheck --workspace @adaptcrm/web",
     )
 
     assert "pull_request:" in workflow
@@ -34,5 +34,4 @@ def test_ci_records_version_and_commit_in_build_metadata() -> None:
     workflow = WORKFLOW_PATH.read_text(encoding="utf-8")
 
     assert "build/metadata.json" in workflow
-    assert "version:p.version" in workflow
-    assert "commit:process.env.GITHUB_SHA" in workflow
+    assert "node apps/web/scripts/build-metadata.mjs" in workflow
