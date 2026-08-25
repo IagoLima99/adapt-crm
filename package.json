@@ -6,7 +6,7 @@
     "apps/web"
   ],
   "engines": {
-    "node": ">=22.12.0 <23",
+    "node": ">=22.13.0 <23",
     "npm": ">=10.9.0 <11"
   },
   "packageManager": "npm@10.9.8",
@@ -16,4 +16,3 @@
     "web:test": "npm run test --workspace @adaptcrm/web"
   }
 }
-
