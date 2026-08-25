@@ -35,6 +35,10 @@ O gate valida os metadados estruturados dos ADRs, o índice das decisões aceita
 - [`Métricas e gatilhos de capacidade`](../operations/capacity-triggers.md) — sinais e decisões de scale-up, separação, scale-out e Kubernetes (`EL-89`).
 - [`Responsabilidades por dimensões de Deployment`](../operations/deployment-responsibilities.md) — ownership por Operations Mode, Isolation Mode e Runtime (`EL-90`).
 
+## Estrutura de desenvolvimento
+
+- [`Contrato do monorepo`](../development/monorepo.md) — árvore autorizada, ownership, workspaces e limites de dependência entre aplicações (`EL-30`).
+
 ## Restrições centrais
 
 - Um código-fonte e uma versão do produto; nenhum fork por Tenant.
