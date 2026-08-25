@@ -6,11 +6,22 @@ Este diretório orienta a implementação da fundação. O vocabulário canônic
 
 O Jira permanece a fonte de verdade para sequência, dependências, status e evidências de execução. Aceitar um ADR não conclui nem movimenta automaticamente uma issue.
 
-- `EL-28` — monólito modular: ADRs 0017, 0019–0021, 0024–0027 e 0050.
-- `EL-86` — tenant-awareness e isolamento: ADRs 0002, 0005, 0009, 0016, 0030, 0034 e 0054.
-- `EL-87` — deployment e configuração externa: ADRs 0012, 0018, 0045–0049 e 0053.
+- `EL-28` — monólito modular: ADRs 0004, 0017, 0019–0021, 0024–0027 e 0050.
+- `EL-86` — tenant-awareness, identidade e isolamento: ADRs 0002, 0005, 0009–0010, 0016, 0030–0039 e 0054.
+- `EL-87` — deployment e configuração externa: ADRs 0012, 0014, 0018, 0045–0049 e 0053.
 - `EL-88` — Temporal: ADRs 0006, 0025, 0029 e 0052.
-- PostgreSQL e migrations: ADRs 0013, 0016, 0034 e 0051.
+- `EL-24` — PostgreSQL e migrations: ADRs 0013, 0016, 0034 e 0051.
+
+## Evidências dos tickets arquiteturais
+
+| Ticket | Contrato verificável | Evidências aceitas |
+| --- | --- | --- |
+| `EL-28` | Catálogo e grafo acíclico de Modules, contratos cross-module, Shared Kernel mínimo, transação restrita ao Module proprietário, outbox, projeções e versionamento único | ADRs 0004, 0017, 0019–0021, 0024–0027 e 0050 |
+| `EL-86` | TenantContext derivado de rota e Membership, identidade no control plane, lifecycles, RBAC, RLS transacional, isolamento por mode e administração cross-tenant auditada | ADRs 0002, 0005, 0009–0010, 0016, 0030–0039 e 0054 |
+| `EL-87` | Dimensões de Deployment, API stateless, responsabilidades operacionais, configuração, secrets, storage, retenção, baseline managed e evolução de Runtime | ADRs 0012, 0014, 0018, 0045–0049 e 0053 |
+| `EL-88` | Critério entre operação local, job curto e coordenação durável; determinismo, Activities, retries, timers, outbox e provisionamento | ADRs 0006, 0025, 0029 e 0052 |
+
+Os quatro conjuntos foram revisados contra o vocabulário canônico e não introduzem dependências de execução entre si. A automação desta verificação pertence a `EL-268`, bloqueada por `EL-31`.
 
 ## Restrições centrais
 
