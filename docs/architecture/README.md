@@ -29,6 +29,11 @@ uv run python scripts/check_architecture.py
 
 O gate valida os metadados estruturados dos ADRs, o índice das decisões aceitas, o vocabulário canônico, os invariantes centrais e a cobertura do mapa Jira. Ele não consulta serviços externos e não altera o workflow de issues: o status de execução permanece exclusivamente no Jira.
 
+## Planejamento operacional
+
+- [`Métricas e gatilhos de capacidade`](../operations/capacity-triggers.md) — sinais e decisões de scale-up, separação, scale-out e Kubernetes (`EL-89`).
+- [`Responsabilidades por dimensões de Deployment`](../operations/deployment-responsibilities.md) — ownership por Operations Mode, Isolation Mode e Runtime (`EL-90`).
+
 ## Restrições centrais
 
 - Um código-fonte e uma versão do produto; nenhum fork por Tenant.
