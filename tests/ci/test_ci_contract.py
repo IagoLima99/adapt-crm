@@ -31,10 +31,21 @@ def workflow_steps() -> list[dict[str, Any]]:
     return steps
 
 
+def executable_commands(steps: list[dict[str, Any]]) -> list[str]:
+    commands: list[str] = []
+    for step in steps:
+        for line in str(step.get("run", "")).splitlines():
+            command = line.strip()
+            if command and not command.startswith("#"):
+                commands.append(command)
+
+    return commands
+
+
 def test_ci_keeps_required_quality_gates() -> None:
     workflow = load_workflow()
     steps = workflow_steps()
-    commands = "\n".join(str(step["run"]) for step in steps if "run" in step)
+    commands = executable_commands(steps)
 
     required_commands = (
         "uv run ruff check .",
@@ -64,14 +75,17 @@ def test_ci_pins_external_actions_to_commits() -> None:
 
 def test_ci_build_is_traceable_to_version_and_commit() -> None:
     steps = workflow_steps()
-    commands = "\n".join(str(step["run"]) for step in steps if "run" in step)
+    commands = executable_commands(steps)
     artifacts = [
         step
         for step in steps
         if str(step.get("uses", "")).startswith("actions/upload-artifact@")
     ]
 
-    assert "git archive" in commands
-    assert "node apps/web/scripts/build-metadata.mjs" in commands
+    assert any(command.startswith("git archive ") for command in commands)
+    assert any(
+        command.startswith("node apps/web/scripts/build-metadata.mjs ")
+        for command in commands
+    )
     assert len(artifacts) == 1
     assert artifacts[0]["with"]["path"] == "build/"
