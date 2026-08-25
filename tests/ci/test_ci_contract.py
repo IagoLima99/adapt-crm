@@ -7,6 +7,10 @@ import yaml
 WORKFLOW_PATH = Path(__file__).parents[2] / ".github" / "workflows" / "ci.yml"
 
 
+def test_controlled_failure_proves_pytest_blocks_merge() -> None:
+    raise AssertionError("EL-31 controlled failure; do not merge")
+
+
 def load_workflow() -> dict[str, Any]:
     workflow = yaml.load(
         WORKFLOW_PATH.read_text(encoding="utf-8"), Loader=yaml.BaseLoader
