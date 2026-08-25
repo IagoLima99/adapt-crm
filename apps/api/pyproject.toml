@@ -1,0 +1,17 @@
+[project]
+name = "adaptcrm-api"
+version = "0.1.0"
+description = "AdaptCRM HTTP API"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "alembic",
+    "asyncpg",
+    "fastapi",
+    "pydantic-settings",
+    "sqlalchemy",
+    "uvicorn[standard]",
+]
+
+[tool.uv]
+package = false
+

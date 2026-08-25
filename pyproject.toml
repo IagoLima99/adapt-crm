@@ -1,0 +1,12 @@
+[dependency-groups]
+dev = [
+    "httpx",
+    "mypy",
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+]
+
+[tool.uv.workspace]
+members = ["apps/api", "apps/worker"]
+

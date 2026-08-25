@@ -1,0 +1,13 @@
+[project]
+name = "adaptcrm-worker"
+version = "0.1.0"
+description = "AdaptCRM Temporal worker"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "pydantic-settings",
+    "temporalio",
+]
+
+[tool.uv]
+package = false
+
