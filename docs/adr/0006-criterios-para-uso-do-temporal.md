@@ -6,6 +6,17 @@ status: accepted
 
 Temporal será usado quando um processo precisar sobreviver a reinícios ou coordenar espera durável, agendamento ou recorrência, múltiplas etapas externas, retries persistentes, intervenção humana ou compensação. Operações atômicas permanecem em transações locais, e tarefas curtas, idempotentes e reconstruíveis podem usar execução simples. A duração isolada não determina a escolha; durabilidade e coordenação determinam.
 
+## Matriz de decisão
+
+| Mecanismo | Usar quando | Não usar quando |
+| --- | --- | --- |
+| Request síncrona | O resultado precisa ser devolvido imediatamente e o trabalho termina durante a request, opcionalmente dentro de uma única transação local | O trabalho precisa sobreviver ao encerramento da request, aguardar ou coordenar retries persistentes |
+| Transação PostgreSQL | Uma mudança atômica grava dados de um único Module e conclui sem coordenação durável | A operação precisa gravar múltiplos Modules ou coordenar efeitos externos após o commit |
+| Job curto | O trabalho é idempotente, reconstruível, sem espera durável e pode ser repetido integralmente | O processo possui timers, múltiplas etapas externas, intervenção humana, compensação ou estado durável próprio |
+| Workflow Temporal | O processo exige durabilidade e coordenação entre etapas, retries, timers, cancelamento, intervenção humana ou compensação | Uma request, transação local ou tarefa curta resolve o caso sem perder garantias necessárias |
+
+Request síncrona e transação não são alternativas excludentes: uma request pode executar uma transação local. A tabela escolhe o mecanismo que mantém o trabalho confirmado depois do limite da request e o limite de consistência de cada escrita.
+
 ## Workflow e Activity
 
 - Workflow contém somente orquestração determinística e replay-safe. I/O, acesso a database, rede, filesystem, relógio ou aleatoriedade não determinísticos são proibidos no Workflow e pertencem a Activities.
