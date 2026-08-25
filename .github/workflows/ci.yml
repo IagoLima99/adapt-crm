@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python-quality:
+    name: Python quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          enable-cache: true
+
+      - name: Install locked dependencies
+        run: uv sync --locked --all-packages --dev
+
+      - name: Lint Python
+        run: uv run ruff check .
+
+      - name: Check Python formatting
+        run: uv run ruff format --check .
+
+      - name: Type-check Python
+        shell: bash
+        run: |
+          targets=(tests)
+          if find apps -type f -name '*.py' -print -quit | grep -q .; then
+            targets+=(apps)
+          fi
+          uv run mypy "${targets[@]}"
+
+      - name: Test Python
+        run: uv run pytest -q
+
+  web-quality:
+    name: Web quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Test web
+        run: npm run test --workspace @adaptcrm/web -- --passWithNoTests
+
+      - name: Lint web when configured
+        shell: bash
+        run: |
+          if node -e "const p=require('./apps/web/package.json'); process.exit(p.scripts?.lint ? 0 : 1)"; then
+            npm run lint --workspace @adaptcrm/web
+          else
+            echo "Web lint will become mandatory when EL-92 adds its lint script."
+          fi
+
+      - name: Type-check and build web when scaffolded
+        shell: bash
+        run: |
+          if [[ -f apps/web/tsconfig.json ]]; then
+            npm run web:build
+          else
+            echo "Web build will become mandatory when EL-92 adds its TypeScript scaffold."
+          fi
+
+      - name: Record build identity
+        shell: bash
+        run: |
+          mkdir -p build
+          node -e "const fs=require('node:fs'); const p=require('./package.json'); fs.writeFileSync('build/metadata.json', JSON.stringify({version:p.version,commit:process.env.GITHUB_SHA})+'\n')"
+
+      - name: Upload build identity
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: build-identity-${{ github.sha }}
+          path: build/metadata.json
+          if-no-files-found: error
+          retention-days: 7
