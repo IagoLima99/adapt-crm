@@ -17,7 +17,17 @@ O Jira permanece a fonte de verdade para sequência, dependências, status e evi
 | `EL-87` | Dimensões de Deployment, API stateless, responsabilidades operacionais, configuração, secrets, storage, retenção, baseline managed e evolução de Runtime | ADRs 0012, 0014, 0018, 0045–0049 e 0053 |
 | `EL-88` | Critério entre request síncrona, transação local, job curto e Workflow Temporal; determinismo, Activities, retries, timers, outbox e provisionamento | ADRs 0006, 0025, 0029 e 0052 |
 
-Os quatro conjuntos foram revisados contra o vocabulário canônico. A automação desta verificação pertence a `EL-268`, bloqueada por `EL-31`.
+Os quatro conjuntos foram revisados contra o vocabulário canônico. A automação desta verificação pertence a `EL-268` e usa o CI mínimo entregue por `EL-31`.
+
+## Gate de conformidade
+
+O contrato verificável está em [`conformance.yml`](conformance.yml). Execute localmente:
+
+```shell
+uv run python scripts/check_architecture.py
+```
+
+O gate valida os metadados estruturados dos ADRs, o índice das decisões aceitas, o vocabulário canônico, os invariantes centrais e a cobertura do mapa Jira. Ele não consulta serviços externos e não altera o workflow de issues: o status de execução permanece exclusivamente no Jira.
 
 ## Restrições centrais
 

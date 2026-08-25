@@ -42,11 +42,14 @@ jobs:
       - name: Type-check Python
         shell: bash
         run: |
-          targets=(tests)
+          targets=(tests scripts)
           if find apps -type f -name '*.py' -print -quit | grep -q .; then
             targets+=(apps)
           fi
           uv run mypy "${targets[@]}"
+
+      - name: Check architecture conformance
+        run: uv run python scripts/check_architecture.py
 
       - name: Test Python
         run: uv run pytest -q
