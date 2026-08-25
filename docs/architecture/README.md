@@ -31,6 +31,7 @@ O gate valida os metadados estruturados dos ADRs, o índice das decisões aceita
 
 ## Planejamento operacional
 
+- [`Matriz ortogonal de Deployment e capacidade`](../operations/deployment-capacity-matrix.md) — combinações, artefatos, persistência, custo, requisitos e evolução condicionada (`EL-29`).
 - [`Métricas e gatilhos de capacidade`](../operations/capacity-triggers.md) — sinais e decisões de scale-up, separação, scale-out e Kubernetes (`EL-89`).
 - [`Responsabilidades por dimensões de Deployment`](../operations/deployment-responsibilities.md) — ownership por Operations Mode, Isolation Mode e Runtime (`EL-90`).
 
