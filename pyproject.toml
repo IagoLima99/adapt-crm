@@ -4,7 +4,9 @@ dev = [
     "mypy",
     "pytest",
     "pytest-asyncio",
+    "pyyaml>=6.0.3",
     "ruff",
+    "types-pyyaml>=6.0.12.20260815",
 ]
 
 [tool.uv.workspace]

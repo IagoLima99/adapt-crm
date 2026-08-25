@@ -9,7 +9,7 @@
   "scripts": {
     "build": "tsc -b && vite build",
     "dev": "vite",
-    "lint": "eslint scripts --max-warnings 0",
+    "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc -p tsconfig.ci.json",
     "test": "vitest run"
   },
@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
-    "@types/node": "26.3.0",
+    "@types/node": "22.20.1",
     "@vitejs/plugin-react": "6.1.0",
     "eslint": "10.9.1",
     "typescript": "6.0.3",

@@ -81,13 +81,17 @@ jobs:
       - name: Type-check web
         run: npm run typecheck --workspace @adaptcrm/web
 
-      - name: Record build identity
-        run: node apps/web/scripts/build-metadata.mjs build/metadata.json "${{ github.sha }}"
+      - name: Build traceable source artifact
+        shell: bash
+        run: |
+          mkdir -p build
+          git archive --format=tar.gz --output=build/adaptcrm-source.tar.gz HEAD
+          node apps/web/scripts/build-metadata.mjs build/metadata.json "${{ github.sha }}"
 
-      - name: Upload build identity
+      - name: Upload traceable source artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: build-identity-${{ github.sha }}
-          path: build/metadata.json
+          name: adaptcrm-build-${{ github.sha }}
+          path: build/
           if-no-files-found: error
           retention-days: 7
