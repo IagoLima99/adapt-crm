@@ -13,4 +13,4 @@ dev = [
 members = ["apps/api", "apps/worker"]
 
 [tool.pytest.ini_options]
-pythonpath = ["apps/api"]
+pythonpath = ["apps/api", "apps/worker"]
