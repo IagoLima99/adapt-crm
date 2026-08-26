@@ -1,0 +1,1 @@
+"""AdaptCRM Temporal worker process."""
