@@ -32,12 +32,27 @@ async def connect_temporal(settings: Settings) -> Client:
     )
 
 
-def build_temporal_worker(client: Client, settings: Settings) -> WorkerRunner:
+def build_temporal_worker(client: Client, settings: Settings) -> Worker:
     return Worker(
         client,
         task_queue=settings.temporal_task_queue,
         activities=[bootstrap_activity],
     )
+
+
+async def shutdown_worker(
+    worker: WorkerRunner,
+    run_task: asyncio.Task[None],
+) -> None:
+    try:
+        await worker.shutdown()
+    except BaseException:
+        run_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await run_task
+        raise
+
+    await run_task
 
 
 async def serve_worker(
@@ -53,7 +68,6 @@ async def serve_worker(
     worker = build_worker(client, settings)
     run_task = asyncio.create_task(worker.run(), name="adaptcrm-temporal-worker")
     stop_task = asyncio.create_task(stop_event.wait(), name="adaptcrm-worker-stop")
-    shutdown_started = False
 
     try:
         completed, _ = await asyncio.wait(
@@ -61,14 +75,12 @@ async def serve_worker(
             return_when=asyncio.FIRST_COMPLETED,
         )
         if stop_task in completed and not run_task.done():
-            shutdown_started = True
-            await worker.shutdown()
-        await run_task
+            await shutdown_worker(worker, run_task)
+        else:
+            await run_task
     except asyncio.CancelledError:
-        if not shutdown_started and not run_task.done():
-            await worker.shutdown()
         if not run_task.done():
-            await asyncio.shield(run_task)
+            await shutdown_worker(worker, run_task)
         raise
     finally:
         stop_task.cancel()
