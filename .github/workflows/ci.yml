@@ -84,6 +84,9 @@ jobs:
       - name: Type-check web
         run: npm run typecheck --workspace @adaptcrm/web
 
+      - name: Build web
+        run: npm run build --workspace @adaptcrm/web
+
       - name: Build traceable source artifact
         shell: bash
         run: |

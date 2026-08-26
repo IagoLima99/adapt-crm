@@ -65,17 +65,19 @@ def test_monorepo_tree_and_workspace_members_are_explicit() -> None:
 
 def test_runtime_and_package_manager_versions_are_pinned() -> None:
     root_package = read_json(PROJECT_ROOT / "package.json")
+    web_package = read_json(APPLICATIONS["web"] / "package.json")
     node_version = (PROJECT_ROOT / ".node-version").read_text(encoding="utf-8").strip()
     python_version = (
         (PROJECT_ROOT / ".python-version").read_text(encoding="utf-8").strip()
     )
 
-    assert re.fullmatch(r"22\.\d+\.\d+", node_version)
+    assert node_version == "22.23.2"
     assert root_package["packageManager"] == "npm@10.9.8"
     assert root_package["engines"] == {
-        "node": ">=22.13.0 <23",
+        "node": ">=22.22.0 <23",
         "npm": ">=10.9.0 <11",
     }
+    assert web_package["engines"] == {"node": root_package["engines"]["node"]}
     npm_config = (PROJECT_ROOT / ".npmrc").read_text(encoding="utf-8")
     assert npm_config.strip().splitlines() == ["engine-strict=true", "save-exact=true"]
     assert python_version == "3.13"
