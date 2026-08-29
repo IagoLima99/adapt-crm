@@ -8,13 +8,8 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.orm import DeclarativeBase
 
 from adaptcrm_api.config import Settings
-
-
-class Base(DeclarativeBase):
-    """Declarative root for all API models and Alembic metadata."""
 
 
 def create_database_engine(settings: Settings) -> AsyncEngine:
