@@ -4,7 +4,6 @@ from pathlib import Path
 
 from scripts.repo import build_parser
 
-
 PROJECT_ROOT = Path(__file__).parents[2]
 CONTRACT_PATH = PROJECT_ROOT / "docs" / "agents" / "execution-contract.md"
 
