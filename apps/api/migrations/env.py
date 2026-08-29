@@ -4,7 +4,7 @@ import asyncio
 from logging.config import fileConfig
 
 from adaptcrm_api.config import load_settings
-from adaptcrm_api.database import Base
+from adaptcrm_api.models import Base
 from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection

@@ -86,6 +86,18 @@ exportados no ambiente, execute:
 
 As migrations são forward-only e a aplicação não usa `create_all` em produção.
 
+## Convenções de models
+
+Novos models persistidos herdam de `adaptcrm_api.models.Model`, que centraliza
+UUIDv7 nativo do PostgreSQL e `created_at`/`updated_at` timezone-aware. O mesmo
+módulo expõe `MoneyAmount` (`NUMERIC(19, 4)`) e `CurrencyCode` (`VARCHAR(3)`)
+para valores monetários; códigos de moeda devem ser validados como ISO 4217 na
+entrada da aplicação. Constraints e índices sem nome explícito recebem nomes
+determinísticos pelo metadata oficial. Checks devem ter nome semântico explícito.
+
+Essas convenções implementam o
+[ADR 0043](docs/adr/0043-convencoes-de-identificadores-tempo-e-dinheiro.md).
+
 ## Qualidade e build
 
 - `python scripts/repo.py test` executa as suítes Python e web.
