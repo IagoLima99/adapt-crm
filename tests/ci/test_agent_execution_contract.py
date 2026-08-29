@@ -30,8 +30,14 @@ def test_agent_contract_covers_readiness_labels_and_preflight_scenarios() -> Non
     assert "READY: NO" in contract
     assert "encerre sem editar código ou documentação" in contract
     assert "Não selecione automaticamente" in contract
-    assert "issue com `agent-ready`, DoR completa, blockers concluídos e fase liberada" in contract
-    assert "issue somente `validado`, com definição ausente, blocker aberto ou fase não" in contract
+    assert (
+        "issue com `agent-ready`, DoR completa, blockers concluídos e fase liberada"
+        in contract
+    )
+    assert (
+        "issue somente `validado`, com definição ausente, blocker aberto ou fase não"
+        in contract
+    )
 
 
 def test_agent_contract_keeps_navigation_and_validation_scope_explicit() -> None:
