@@ -47,6 +47,9 @@ interrompendo no primeiro erro.
 | `API_HOST` | comando `dev` | Não | Interface de escuta da API; padrão `127.0.0.1`. |
 | `API_PORT` | comando `dev` | Não | Porta HTTP da API; padrão `8000`. |
 | `DATABASE_URL` | API | Sim | Endpoint PostgreSQL externo ao processo. |
+| `DATABASE_POOL_SIZE` | API | Não | Conexões persistentes do pool; padrão `5`. |
+| `DATABASE_MAX_OVERFLOW` | API | Não | Conexões além do pool; padrão `10`. |
+| `DATABASE_POOL_TIMEOUT` | API | Não | Segundos aguardando conexão; padrão `30`. |
 | `TEMPORAL_ADDRESS` | worker | Sim | Endpoint do servidor Temporal. |
 | `TEMPORAL_NAMESPACE` | worker | Sim | Namespace utilizado pelo worker. |
 | `TEMPORAL_TASK_QUEUE` | worker | Sim | Task queue técnica registrada no startup. |
@@ -75,6 +78,13 @@ Endpoints padrão:
 
 A conexão e as migrations funcionais do PostgreSQL pertencem ao EL-24. A
 containerização das dependências e aplicações pertence ao EL-25/EL-40.
+
+Para aplicar a baseline em um banco vazio, com `APP_ENV` e `DATABASE_URL`
+exportados no ambiente, execute:
+
+`uv run alembic -c apps/api/alembic.ini upgrade head`
+
+As migrations são forward-only e a aplicação não usa `create_all` em produção.
 
 ## Qualidade e build
 
