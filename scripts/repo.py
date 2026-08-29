@@ -20,14 +20,7 @@ INSTALL_COMMANDS: tuple[tuple[str, ...], ...] = (
     ("npm", "ci"),
 )
 TEST_COMMANDS: tuple[tuple[str, ...], ...] = (
-    (
-        "uv",
-        "run",
-        "pytest",
-        "-q",
-        "--basetemp",
-        ".pytest-tmp",
-    ),
+    ("uv", "run", "pytest", "-q"),
     ("npm", "run", "test", "--workspace", "@adaptcrm/web"),
 )
 LINT_COMMANDS: tuple[tuple[str, ...], ...] = (

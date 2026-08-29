@@ -39,6 +39,13 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
 
+      - name: Verify clean checkout preconditions
+        shell: bash
+        run: |
+          test ! -e .env
+          test ! -e .venv
+          test ! -e node_modules
+
       - name: Install locked repository dependencies
         run: python scripts/repo.py install
 

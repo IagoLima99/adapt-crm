@@ -48,6 +48,9 @@ def test_ci_uses_the_public_repository_bootstrap_and_quality_contract() -> None:
     commands = executable_commands(steps)
 
     required_commands = (
+        "test ! -e .env",
+        "test ! -e .venv",
+        "test ! -e node_modules",
         "python scripts/repo.py install",
         "python scripts/repo.py lint",
         "python scripts/repo.py test",

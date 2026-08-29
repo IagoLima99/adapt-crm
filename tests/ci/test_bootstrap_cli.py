@@ -44,7 +44,7 @@ def test_test_command_covers_python_and_web_suites() -> None:
 
     assert result.returncode == 0
     assert result.stdout.splitlines() == [
-        "uv run pytest -q --basetemp .pytest-tmp",
+        "uv run pytest -q",
         "npm run test --workspace @adaptcrm/web",
     ]
 
@@ -193,6 +193,78 @@ def test_smoke_command_reaches_api_through_the_web_origin() -> None:
 
     assert result.returncode == 0
     assert requested_paths == ["/api/health"]
+
+
+def test_smoke_command_reaches_api_through_the_real_vite_proxy() -> None:
+    requested_paths: list[str] = []
+
+    class UpstreamHandler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            requested_paths.append(self.path)
+            body = json.dumps(
+                {
+                    "status": "ok",
+                    "service": "adaptcrm-api",
+                    "environment": "local",
+                }
+            ).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, format: str, *args: object) -> None:
+            del format, args
+
+    with ThreadingHTTPServer(("127.0.0.1", 0), UpstreamHandler) as upstream:
+        thread = threading.Thread(target=upstream.serve_forever)
+        thread.start()
+        with socket.socket() as reservation:
+            reservation.bind(("127.0.0.1", 0))
+            web_port = reservation.getsockname()[1]
+        environment = dict(os.environ)
+        environment["VITE_API_BASE_URL"] = (
+            f"http://{upstream.server_name}:{upstream.server_port}"
+        )
+        process = start_process(
+            (
+                "npm",
+                "run",
+                "dev",
+                "--workspace",
+                "@adaptcrm/web",
+                "--",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                str(web_port),
+                "--strictPort",
+            ),
+            cwd=PROJECT_ROOT,
+            env=environment,
+        )
+        try:
+            deadline = time.monotonic() + 10
+            while time.monotonic() < deadline:
+                result = run_cli(
+                    "smoke",
+                    "--web-url",
+                    f"http://127.0.0.1:{web_port}",
+                    "--timeout",
+                    "0.2",
+                )
+                if result.returncode == 0:
+                    break
+                time.sleep(0.1)
+            else:
+                pytest.fail(f"Vite proxy did not become healthy: {result.stderr}")
+        finally:
+            stop_processes((process,))
+            upstream.shutdown()
+            thread.join()
+
+    assert requested_paths == ["/health"]
 
 
 def test_smoke_command_validates_real_api_startup() -> None:
