@@ -65,7 +65,7 @@ três processos:
 O supervisor inicia API, worker e web. `Ctrl+C` encerra os processos filhos;
 se um deles falhar, os demais também são encerrados e o exit code é propagado.
 Use `python scripts/repo.py dev --env-file outro.env` para selecionar outro
-arquivo local ou acrescente `--dry-run` para inspecionar os comandos.
+arquivo local.
 
 Endpoints padrão:
 
@@ -84,20 +84,6 @@ containerização das dependências e aplicações pertence ao EL-25/EL-40.
 - `python scripts/repo.py build` gera o build web de produção.
 - `python scripts/repo.py smoke` valida o contrato público `/health` da API
   através do proxy `/api` do servidor web.
-
-Para validar a API diretamente, sem o proxy web, use
-`python scripts/repo.py smoke --api-url http://localhost:8000`.
-Para outra origem web, use `--web-url http://localhost:5173`.
-
-O smoke real do worker com servidor Temporal efêmero é opt-in:
-
-```powershell
-$env:RUN_TEMPORAL_INTEGRATION = "1"
-uv run pytest -q apps/worker/tests/test_worker_integration.py
-```
-
-Em shells POSIX, defina a variável com
-`RUN_TEMPORAL_INTEGRATION=1 uv run pytest -q apps/worker/tests/test_worker_integration.py`.
 
 ## Validação do bootstrap
 
@@ -119,5 +105,3 @@ Para reproduzir a validação sem depender de arquivos locais não versionados:
   `DATABASE_URL`.
 - Versão Node incompatível: use exatamente a versão de `.node-version`; o npm
   está configurado com `engine-strict=true`.
-- Para identificar um comando sem executá-lo, use `--dry-run` em `install`,
-  `dev`, `test`, `lint` ou `build`.

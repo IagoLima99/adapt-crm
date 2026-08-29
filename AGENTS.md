@@ -12,3 +12,9 @@ Usamos os cinco labels canônicos de triagem. Consulte `docs/agents/triage-label
 
 Este repositório usa documentação de domínio single-context. Consulte `docs/agents/domain.md`.
 
+### Escopo de entrega
+
+Implemente somente comportamento, opções CLI, arquivos e documentação solicitados
+pelo ticket ou comprovadamente necessários para um critério de aceite. Trate
+ergonomias, flags, automações e documentação adicionais como expansão de escopo e
+peça direção antes de adicioná-las.

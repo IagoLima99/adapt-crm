@@ -115,10 +115,6 @@ class ProcessTree:
         self._signal_tree(force=True)
 
 
-def format_command(command: Sequence[str]) -> str:
-    return " ".join(command)
-
-
 def execute_command(command: Sequence[str]) -> int:
     executable = shutil.which(command[0])
     if executable is None:
@@ -131,14 +127,9 @@ def execute_command(command: Sequence[str]) -> int:
 def run_commands(
     commands: Sequence[Sequence[str]],
     *,
-    dry_run: bool,
     command_runner: CommandRunner = execute_command,
 ) -> int:
     for command in commands:
-        if dry_run:
-            print(format_command(command))
-            continue
-
         return_code = command_runner(command)
         if return_code != 0:
             return return_code
@@ -298,49 +289,32 @@ def build_parser() -> argparse.ArgumentParser:
         description="Run AdaptCRM repository tasks from one cross-platform entrypoint."
     )
     subparsers = parser.add_subparsers(dest="task", required=True)
-    install_parser = subparsers.add_parser(
+    subparsers.add_parser(
         "install", help="Install locked Python and Node.js dependencies."
     )
-    install_parser.add_argument("--dry-run", action="store_true")
-    test_parser = subparsers.add_parser("test", help="Run Python and web test suites.")
-    test_parser.add_argument("--dry-run", action="store_true")
-    lint_parser = subparsers.add_parser(
-        "lint", help="Run all static quality and architecture gates."
-    )
-    lint_parser.add_argument("--dry-run", action="store_true")
-    build_parser = subparsers.add_parser("build", help="Build production artifacts.")
-    build_parser.add_argument("--dry-run", action="store_true")
+    subparsers.add_parser("test", help="Run Python and web test suites.")
+    subparsers.add_parser("lint", help="Run all static quality and architecture gates.")
+    subparsers.add_parser("build", help="Build production artifacts.")
     dev_parser = subparsers.add_parser(
         "dev", help="Start API, worker, and web development processes."
     )
     dev_parser.add_argument("--env-file", type=Path, default=Path(".env"))
-    dev_parser.add_argument("--dry-run", action="store_true")
-    smoke_parser = subparsers.add_parser(
-        "smoke", help="Validate API health directly or through the web dev proxy."
+    subparsers.add_parser(
+        "smoke", help="Validate API health through the web development proxy."
     )
-    smoke_target = smoke_parser.add_mutually_exclusive_group()
-    smoke_target.add_argument(
-        "--api-url",
-        help="Call the API origin directly instead of the web development proxy.",
-    )
-    smoke_target.add_argument(
-        "--web-url",
-        help="Web origin whose /api proxy should reach the API.",
-    )
-    smoke_parser.add_argument("--timeout", type=float, default=5.0)
     return parser
 
 
 def main(arguments: Sequence[str] | None = None) -> int:
     parsed = build_parser().parse_args(arguments)
     if parsed.task == "install":
-        return run_commands(INSTALL_COMMANDS, dry_run=parsed.dry_run)
+        return run_commands(INSTALL_COMMANDS)
     if parsed.task == "test":
-        return run_commands(TEST_COMMANDS, dry_run=parsed.dry_run)
+        return run_commands(TEST_COMMANDS)
     if parsed.task == "lint":
-        return run_commands(LINT_COMMANDS, dry_run=parsed.dry_run)
+        return run_commands(LINT_COMMANDS)
     if parsed.task == "build":
-        return run_commands(BUILD_COMMANDS, dry_run=parsed.dry_run)
+        return run_commands(BUILD_COMMANDS)
     if parsed.task == "dev":
         try:
             environment = load_environment(parsed.env_file)
@@ -348,15 +322,10 @@ def main(arguments: Sequence[str] | None = None) -> int:
         except ValueError as error:
             print(error, file=sys.stderr)
             return 2
-        if parsed.dry_run:
-            return run_commands(commands, dry_run=True)
         return supervise_processes(commands, environment=environment)
     if parsed.task == "smoke":
-        health_base_url = parsed.api_url or (
-            f"{(parsed.web_url or 'http://localhost:5173').rstrip('/')}/api"
-        )
         try:
-            print(check_api_health(health_base_url, timeout=parsed.timeout))
+            print(check_api_health("http://localhost:5173/api", timeout=5.0))
         except (
             OSError,
             URLError,
