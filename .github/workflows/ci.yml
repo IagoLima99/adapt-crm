@@ -14,10 +14,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  python-quality:
-    name: Python quality
+  bootstrap-quality:
+    name: Clean bootstrap and quality
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Check out repository
@@ -28,42 +28,9 @@ jobs:
       - name: Install uv and Python
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
+          python-version: "3.13"
+          activate-environment: true
           enable-cache: true
-
-      - name: Install locked dependencies
-        run: uv sync --locked --all-packages --dev
-
-      - name: Lint Python
-        run: uv run ruff check .
-
-      - name: Check Python formatting
-        run: uv run ruff format --check .
-
-      - name: Type-check Python
-        shell: bash
-        run: |
-          targets=(tests scripts)
-          if find apps -type f -name '*.py' -print -quit | grep -q .; then
-            targets+=(apps)
-          fi
-          uv run mypy "${targets[@]}"
-
-      - name: Check architecture conformance
-        run: uv run python scripts/check_architecture.py
-
-      - name: Test Python
-        run: uv run pytest -q
-
-  web-quality:
-    name: Web quality
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -72,20 +39,17 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
 
-      - name: Install locked dependencies
-        run: npm ci
+      - name: Install locked repository dependencies
+        run: python scripts/repo.py install
 
-      - name: Test web
-        run: npm run test --workspace @adaptcrm/web
+      - name: Run repository quality gates
+        run: python scripts/repo.py lint
 
-      - name: Lint web
-        run: npm run lint --workspace @adaptcrm/web
+      - name: Run repository tests
+        run: python scripts/repo.py test
 
-      - name: Type-check web
-        run: npm run typecheck --workspace @adaptcrm/web
-
-      - name: Build web
-        run: npm run build --workspace @adaptcrm/web
+      - name: Build repository artifacts
+        run: python scripts/repo.py build
 
       - name: Build traceable source artifact
         shell: bash

@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+import os
+import socket
+import subprocess
+import sys
+import time
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 import pytest
 
-from scripts.repo import Process, start_process, supervise_processes
+from scripts.repo import Process, start_process, stop_processes, supervise_processes
 
 
 class FakeProcess:
@@ -85,19 +90,32 @@ def test_dev_process_resolves_the_platform_executable(
     started: list[tuple[str, ...]] = []
     process = FakeProcess(None)
 
-    def popen(command: Sequence[str], *, cwd: Path, env: Mapping[str, str]) -> Process:
+    def popen(
+        command: Sequence[str],
+        *,
+        cwd: Path,
+        env: Mapping[str, str],
+        **options: object,
+    ) -> Process:
         assert cwd == tmp_path
         assert env == {"APP_ENV": "local"}
+        expected_option = (
+            {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+            if os.name == "nt"
+            else {"start_new_session": True}
+        )
+        assert options == expected_option
         started.append(tuple(command))
         return process
 
     monkeypatch.setattr("shutil.which", lambda executable: f"resolved/{executable}")
     monkeypatch.setattr("scripts.repo.subprocess.Popen", popen)
 
-    assert (
-        start_process(("npm", "run", "dev"), cwd=tmp_path, env={"APP_ENV": "local"})
-        is process
+    managed = start_process(
+        ("npm", "run", "dev"), cwd=tmp_path, env={"APP_ENV": "local"}
     )
+
+    assert managed.poll() is None
     assert started == [("resolved/npm", "run", "dev")]
 
 
@@ -129,3 +147,71 @@ def test_dev_supervisor_stops_all_services_on_requested_shutdown() -> None:
 
     assert result == 130
     assert all(process.terminated for process in started)
+
+
+def test_dev_supervisor_stops_a_real_descendant_process(tmp_path: Path) -> None:
+    child_script = tmp_path / "child.py"
+    child_script.write_text(
+        """
+import socket
+import sys
+import time
+from pathlib import Path
+
+port = int(sys.argv[1])
+ready_file = Path(sys.argv[2])
+with socket.socket() as server:
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server.bind(("127.0.0.1", port))
+    server.listen()
+    ready_file.write_text("ready", encoding="utf-8")
+    time.sleep(60)
+""".strip(),
+        encoding="utf-8",
+    )
+    parent_script = tmp_path / "parent.py"
+    parent_script.write_text(
+        """
+import subprocess
+import sys
+import time
+
+subprocess.Popen([sys.executable, sys.argv[1], sys.argv[2], sys.argv[3]])
+time.sleep(60)
+""".strip(),
+        encoding="utf-8",
+    )
+    with socket.socket() as reservation:
+        reservation.bind(("127.0.0.1", 0))
+        port = reservation.getsockname()[1]
+    ready_file = tmp_path / "ready"
+    process = start_process(
+        (
+            sys.executable,
+            str(parent_script),
+            str(child_script),
+            str(port),
+            str(ready_file),
+        ),
+        cwd=tmp_path,
+        env=dict(os.environ),
+    )
+    try:
+        deadline = time.monotonic() + 5
+        while not ready_file.exists() and time.monotonic() < deadline:
+            time.sleep(0.05)
+        assert ready_file.exists()
+
+        stop_processes((process,))
+
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline:
+            with socket.socket() as client:
+                if client.connect_ex(("127.0.0.1", port)) != 0:
+                    break
+            time.sleep(0.05)
+        else:
+            pytest.fail("descendant process kept its listening socket after shutdown")
+    finally:
+        if process.poll() is None:
+            process.kill()

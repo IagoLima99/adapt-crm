@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 import json
+import os
+import socket
 import subprocess
 import sys
 import threading
+import time
 from collections.abc import Sequence
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import pytest
 
-from scripts.repo import execute_command, run_commands
+from scripts.repo import execute_command, run_commands, start_process, stop_processes
 
 PROJECT_ROOT = Path(__file__).parents[2]
 REPOSITORY_CLI = PROJECT_ROOT / "scripts" / "repo.py"
@@ -76,7 +79,7 @@ def test_dev_command_publishes_all_processes_with_example_configuration() -> Non
     assert result.stdout.splitlines() == [
         (
             "uv run --directory apps/api uvicorn "
-            "adaptcrm_api.main:create_app --factory --host 0.0.0.0 --port 8000"
+            "adaptcrm_api.main:create_app --factory --host 127.0.0.1 --port 8000"
         ),
         "uv run --directory apps/worker python -m adaptcrm_worker",
         "npm run dev --workspace @adaptcrm/web",
@@ -150,6 +153,90 @@ def test_smoke_command_validates_the_public_api_health_contract() -> None:
             thread.join()
 
     assert result.returncode == 0
+    assert result.stdout.strip() == "adaptcrm-api health ok (local)"
+
+
+def test_smoke_command_reaches_api_through_the_web_origin() -> None:
+    requested_paths: list[str] = []
+
+    class WebProxyHandler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            requested_paths.append(self.path)
+            body = json.dumps(
+                {
+                    "status": "ok",
+                    "service": "adaptcrm-api",
+                    "environment": "local",
+                }
+            ).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, format: str, *args: object) -> None:
+            del format, args
+
+    with ThreadingHTTPServer(("127.0.0.1", 0), WebProxyHandler) as server:
+        thread = threading.Thread(target=server.serve_forever)
+        thread.start()
+        try:
+            result = run_cli(
+                "smoke",
+                "--web-url",
+                f"http://{server.server_name}:{server.server_port}",
+            )
+        finally:
+            server.shutdown()
+            thread.join()
+
+    assert result.returncode == 0
+    assert requested_paths == ["/api/health"]
+
+
+def test_smoke_command_validates_real_api_startup() -> None:
+    with socket.socket() as reservation:
+        reservation.bind(("127.0.0.1", 0))
+        port = reservation.getsockname()[1]
+    environment = dict(os.environ)
+    environment["APP_ENV"] = "local"
+    environment["DATABASE_URL"] = (
+        "postgresql+asyncpg://adaptcrm:adaptcrm@127.0.0.1:5432/adaptcrm"
+    )
+    process = start_process(
+        (
+            sys.executable,
+            "-m",
+            "uvicorn",
+            "adaptcrm_api.main:create_app",
+            "--factory",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            str(port),
+        ),
+        cwd=PROJECT_ROOT / "apps" / "api",
+        env=environment,
+    )
+    try:
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            result = run_cli(
+                "smoke",
+                "--api-url",
+                f"http://127.0.0.1:{port}",
+                "--timeout",
+                "0.2",
+            )
+            if result.returncode == 0:
+                break
+            time.sleep(0.1)
+        else:
+            pytest.fail(f"API did not become healthy: {result.stderr}")
+    finally:
+        stop_processes((process,))
+
     assert result.stdout.strip() == "adaptcrm-api health ok (local)"
 
 

@@ -50,7 +50,7 @@ interrompendo no primeiro erro.
 | `TEMPORAL_ADDRESS` | worker | Sim | Endpoint do servidor Temporal. |
 | `TEMPORAL_NAMESPACE` | worker | Sim | Namespace utilizado pelo worker. |
 | `TEMPORAL_TASK_QUEUE` | worker | Sim | Task queue técnica registrada no startup. |
-| `VITE_API_BASE_URL` | web e smoke | Sim | Origem HTTP da API usada no desenvolvimento. |
+| `VITE_API_BASE_URL` | web | Sim | Destino HTTP do proxy `/api` usado no desenvolvimento. |
 
 Variáveis já definidas no ambiente do processo têm precedência sobre o
 arquivo `.env`. Valores ausentes ou em branco impedem o startup seguro.
@@ -82,11 +82,12 @@ containerização das dependências e aplicações pertence ao EL-25/EL-40.
 - `python scripts/repo.py lint` executa Ruff, formatação, mypy, arquitetura,
   ESLint e TypeScript.
 - `python scripts/repo.py build` gera o build web de produção.
-- `python scripts/repo.py smoke` valida o contrato público `/health` da API em
-  execução.
+- `python scripts/repo.py smoke` valida o contrato público `/health` da API
+  através do proxy `/api` do servidor web.
 
-Para validar outro endereço, use
+Para validar a API diretamente, sem o proxy web, use
 `python scripts/repo.py smoke --api-url http://localhost:8000`.
+Para outra origem web, use `--web-url http://localhost:5173`.
 
 O smoke real do worker com servidor Temporal efêmero é opt-in:
 

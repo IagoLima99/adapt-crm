@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import time
@@ -69,6 +70,56 @@ class ProcessFactory(Protocol):
         cwd: Path,
         env: dict[str, str],
     ) -> Process: ...
+
+
+class ProcessTree:
+    """Own a subprocess group so wrappers cannot orphan development services."""
+
+    def __init__(self, process: subprocess.Popen[bytes]) -> None:
+        self._process = process
+
+    def poll(self) -> int | None:
+        return self._process.poll()
+
+    def _signal_tree(self, *, force: bool) -> None:
+        if os.name == "nt":
+            if not force:
+                try:
+                    self._process.send_signal(  # type: ignore[attr-defined]
+                        signal.CTRL_BREAK_EVENT  # type: ignore[attr-defined]
+                    )
+                except OSError:
+                    pass
+                return
+
+            subprocess.run(
+                ["taskkill", "/PID", str(self._process.pid), "/T", "/F"],
+                check=False,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            if self._process.poll() is None:
+                self._process.kill()
+            return
+
+        try:
+            os.killpg(  # type: ignore[attr-defined]
+                self._process.pid,
+                signal.SIGKILL  # type: ignore[attr-defined]
+                if force
+                else signal.SIGTERM,
+            )
+        except ProcessLookupError:
+            pass
+
+    def terminate(self) -> None:
+        self._signal_tree(force=False)
+
+    def wait(self, timeout: float | None = None) -> int:
+        return self._process.wait(timeout=timeout)
+
+    def kill(self) -> None:
+        self._signal_tree(force=True)
 
 
 def format_command(command: Sequence[str]) -> str:
@@ -173,14 +224,27 @@ def start_process(command: Sequence[str], *, cwd: Path, env: dict[str, str]) -> 
     if executable is None:
         raise FileNotFoundError(f"Required executable not found: {command[0]}")
     resolved_command = (executable, *command[1:])
-    return subprocess.Popen(resolved_command, cwd=cwd, env=env)
+    if os.name == "nt":
+        process = subprocess.Popen(
+            resolved_command,
+            cwd=cwd,
+            env=env,
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+        )
+    else:
+        process = subprocess.Popen(
+            resolved_command,
+            cwd=cwd,
+            env=env,
+            start_new_session=True,
+        )
+    return ProcessTree(process)
 
 
 def stop_processes(processes: Sequence[Process]) -> None:
-    running = [process for process in processes if process.poll() is None]
-    for process in running:
+    for process in processes:
         process.terminate()
-    for process in running:
+    for process in processes:
         try:
             process.wait(timeout=5)
         except subprocess.TimeoutExpired:
@@ -259,11 +323,16 @@ def build_parser() -> argparse.ArgumentParser:
     dev_parser.add_argument("--env-file", type=Path, default=Path(".env"))
     dev_parser.add_argument("--dry-run", action="store_true")
     smoke_parser = subparsers.add_parser(
-        "smoke", help="Validate the running API health contract."
+        "smoke", help="Validate API health directly or through the web dev proxy."
     )
-    smoke_parser.add_argument(
+    smoke_target = smoke_parser.add_mutually_exclusive_group()
+    smoke_target.add_argument(
         "--api-url",
-        default=os.environ.get("VITE_API_BASE_URL", "http://localhost:8000"),
+        help="Call the API origin directly instead of the web development proxy.",
+    )
+    smoke_target.add_argument(
+        "--web-url",
+        help="Web origin whose /api proxy should reach the API.",
     )
     smoke_parser.add_argument("--timeout", type=float, default=5.0)
     return parser
@@ -290,8 +359,11 @@ def main(arguments: Sequence[str] | None = None) -> int:
             return run_commands(commands, dry_run=True)
         return supervise_processes(commands, environment=environment)
     if parsed.task == "smoke":
+        health_base_url = parsed.api_url or (
+            f"{(parsed.web_url or 'http://localhost:5173').rstrip('/')}/api"
+        )
         try:
-            print(check_api_health(parsed.api_url, timeout=parsed.timeout))
+            print(check_api_health(health_base_url, timeout=parsed.timeout))
         except (
             OSError,
             URLError,
