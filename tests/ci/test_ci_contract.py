@@ -42,20 +42,19 @@ def executable_commands(steps: list[dict[str, Any]]) -> list[str]:
     return commands
 
 
-def test_ci_keeps_required_quality_gates() -> None:
+def test_ci_uses_the_public_repository_bootstrap_and_quality_contract() -> None:
     workflow = load_workflow()
     steps = workflow_steps()
     commands = executable_commands(steps)
 
     required_commands = (
-        "uv run ruff check .",
-        "uv run ruff format --check .",
-        'uv run mypy "${targets[@]}"',
-        "uv run python scripts/check_architecture.py",
-        "uv run pytest -q",
-        "npm run test --workspace @adaptcrm/web",
-        "npm run lint --workspace @adaptcrm/web",
-        "npm run typecheck --workspace @adaptcrm/web",
+        "test ! -e .env",
+        "test ! -e .venv",
+        "test ! -e node_modules",
+        "python scripts/repo.py install",
+        "python scripts/repo.py lint",
+        "python scripts/repo.py test",
+        "python scripts/repo.py build",
     )
 
     triggers = workflow.get("on")
