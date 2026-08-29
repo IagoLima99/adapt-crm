@@ -25,6 +25,13 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Verify clean checkout preconditions
+        shell: bash
+        run: |
+          test ! -e .env
+          test ! -e .venv
+          test ! -e node_modules
+
       - name: Install uv and Python
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
@@ -38,13 +45,6 @@ jobs:
           node-version-file: .node-version
           cache: npm
           cache-dependency-path: package-lock.json
-
-      - name: Verify clean checkout preconditions
-        shell: bash
-        run: |
-          test ! -e .env
-          test ! -e .venv
-          test ! -e node_modules
 
       - name: Install locked repository dependencies
         run: python scripts/repo.py install
