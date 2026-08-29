@@ -43,6 +43,7 @@ REQUIRED_DEV_VARIABLES = (
     "VITE_API_BASE_URL",
 )
 CommandRunner: TypeAlias = Callable[[Sequence[str]], int]
+WINDOWS_NEW_PROCESS_GROUP = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
 
 
 class Process(Protocol):
@@ -213,7 +214,7 @@ def start_process(command: Sequence[str], *, cwd: Path, env: dict[str, str]) -> 
             resolved_command,
             cwd=cwd,
             env=env,
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+            creationflags=WINDOWS_NEW_PROCESS_GROUP,
         )
     else:
         process = subprocess.Popen(

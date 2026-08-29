@@ -100,7 +100,7 @@ def test_dev_process_resolves_the_platform_executable(
         assert cwd == tmp_path
         assert env == {"APP_ENV": "local"}
         expected_option = (
-            {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+            {"creationflags": getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)}
             if os.name == "nt"
             else {"start_new_session": True}
         )
